@@ -1,0 +1,55 @@
+# ##################################################
+# #                                                #
+# #       STACK DE EVOLUTION API PARA TRAEFIK      #
+# #         https://digitallfran.co                #
+# #                                                #
+# ##################################################
+
+services:
+  evolution_api:
+    ## -----------------https://digitallfran.co--------------------- ##
+    image: atendai/evolution-api:latest
+    container_name: evolution_api
+    restart: unless-stopped
+    environment:
+      # --- Configuración del Servidor y API ---
+      - SERVER_URL=${SERVER_URL}
+      - AUTHENTICATION_API_KEY=${API_KEY}
+      - API_PORT_INTERNAL=${API_PORT_INTERNAL}
+      
+      # --- Conexión a la Base de Datos (Construida desde .env) ---
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+      
+      # --- Conexión a la Caché (Construida desde .env) ---
+      - CACHE_ENABLED=true
+      - CACHE_PROVIDER=redis
+      - CACHE_REDIS_URI=redis://:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}/${REDIS_DB}
+      
+      # --- Configuración del Cliente WhatsApp ---
+      - CONFIG_SESSION_PHONE_VERSION=${CONFIG_SESSION_PHONE_VERSION}
+      - CONFIG_SESSION_PHONE_CLIENT=${CONFIG_SESSION_PHONE_CLIENT}
+      - CONFIG_SESSION_PHONE_NAME=${CONFIG_SESSION_PHONE_NAME}
+      
+      # --- Zona Horaria e Idioma ---
+      - TZ=${TZ}
+      - LANGUAGE=es
+    volumes:
+      - evolution_api_instances:/evolution/instances
+    networks:
+      - digitallfran_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=digitallfran_net"
+      - "traefik.http.routers.evolution-api.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.evolution-api.entrypoints=websecure"
+      - "traefik.http.routers.evolution-api.tls.certresolver=myresolver"
+      - "traefik.http.services.evolution-api.loadbalancer.server.port=${API_PORT_INTERNAL}"
+
+volumes:
+  evolution_api_instances: {}
+
+networks:
+  digitallfran_net:
+    external: true
